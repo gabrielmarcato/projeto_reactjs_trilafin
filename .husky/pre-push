@@ -1,0 +1,6 @@
+echo "🚀 Antes de enviar: typecheck + suite completa..."
+
+npm run typecheck || exit 1
+npm run test || exit 1
+
+echo "✅ Tudo verde — pode enviar."

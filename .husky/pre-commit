@@ -1,0 +1,10 @@
+echo "🔍 Verificando o código antes do commit..."
+
+# 1) Arquivos staged: eslint --fix e prettier --write (corrige e formata).
+npx lint-staged || exit 1
+
+# 2) Checagem de tipos do projeto inteiro.
+echo "🧩 Typecheck..."
+npm run typecheck || exit 1
+
+echo "✅ Commit liberado — a suíte de testes roda no pre-push."

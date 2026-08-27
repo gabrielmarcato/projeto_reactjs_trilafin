@@ -1,0 +1,4 @@
+# Normaliza fim de linha; hooks e scripts shell precisam de LF.
+* text=auto
+.husky/** text eol=lf
+*.sh text eol=lf
