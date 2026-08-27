@@ -1,4 +1,7 @@
 import { create } from 'zustand';
+import { profileApi } from '@/features/profile/api';
+
+const ONLINE = import.meta.env.MODE !== 'test';
 
 /** Dados do usuário/perfil da conta. */
 export interface Profile {
@@ -24,6 +27,7 @@ export interface Profile {
 
 interface ProfileState {
   profile: Profile;
+  hydrate: () => Promise<void>;
   updateProfile: (profile: Profile) => void;
 }
 
@@ -44,7 +48,18 @@ export const initialProfile: Profile = {
  */
 export const useProfileStore = create<ProfileState>((set) => ({
   profile: initialProfile,
-  updateProfile: (profile) => set({ profile }),
+  hydrate: async () => {
+    try {
+      const profile = await profileApi.get();
+      if (profile?.name) set({ profile });
+    } catch {
+      /* offline: mantém o estado atual */
+    }
+  },
+  updateProfile: (profile) => {
+    set({ profile });
+    if (ONLINE) profileApi.update(profile).catch(() => {});
+  },
 }));
 
 /** Iniciais para o avatar, a partir do nome ("Marina Ribeiro" → "MR"). */

@@ -1,6 +1,15 @@
+import { useMemo } from 'react';
 import styled from 'styled-components';
 import { Label } from '@/components/ui/Text';
-import { stats } from '../data';
+import { money } from '@/lib/format';
+import { theme } from '@/styles/theme';
+import { useTransactionsStore } from '@/store/useTransactionsStore';
+import {
+  filterByPeriod,
+  PERIOD_CAPTION,
+  summarize,
+  type Period,
+} from '../aggregate';
 
 const Band = styled.section`
   display: grid;
@@ -39,17 +48,52 @@ const Delta = styled.div`
   color: ${({ theme }) => theme.colors.textMuted};
 `;
 
-/** Faixa de 4 indicadores-chave (patrimônio, entradas, saídas, poupança). */
-export function StatBand() {
+const plural = (n: number, one: string, many: string) =>
+  `${n} ${n === 1 ? one : many}`;
+
+/**
+ * Faixa de 4 indicadores da home, calculados das transações reais no período
+ * selecionado: Entradas, Saídas, Saldo e Lançamentos. Reativa — qualquer
+ * mudança nas transações reflete aqui na hora (a store é a fonte).
+ */
+export function StatBand({ period }: { period: Period }) {
+  const transactions = useTransactionsStore((s) => s.transactions);
+
+  const summary = useMemo(
+    () => summarize(filterByPeriod(transactions, period)),
+    [transactions, period],
+  );
+
   return (
     <Band>
-      {stats.map((s) => (
-        <Cell key={s.label}>
-          <Label as="div">{s.label}</Label>
-          <Value $tone={s.tone}>{s.value}</Value>
-          <Delta>{s.delta}</Delta>
-        </Cell>
-      ))}
+      <Cell>
+        <Label as="div">Entradas</Label>
+        <Value $tone={theme.colors.text}>{money(summary.entradas)}</Value>
+        <Delta>
+          {plural(summary.countEntradas, 'lançamento', 'lançamentos')}
+        </Delta>
+      </Cell>
+      <Cell>
+        <Label as="div">Saídas</Label>
+        <Value $tone={theme.colors.accent}>{money(summary.saidas)}</Value>
+        <Delta>
+          {plural(summary.countSaidas, 'lançamento', 'lançamentos')}
+        </Delta>
+      </Cell>
+      <Cell>
+        <Label as="div">Saldo</Label>
+        <Value
+          $tone={summary.saldo >= 0 ? theme.colors.text : theme.colors.accent}
+        >
+          {money(summary.saldo)}
+        </Value>
+        <Delta>entradas − saídas</Delta>
+      </Cell>
+      <Cell>
+        <Label as="div">Lançamentos</Label>
+        <Value $tone={theme.colors.text}>{summary.count}</Value>
+        <Delta>{PERIOD_CAPTION[period]}</Delta>
+      </Cell>
     </Band>
   );
 }

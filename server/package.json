@@ -1,0 +1,26 @@
+{
+  "name": "trilafin-api",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "API do Trilha.Fin — Fastify + SQLite (node:sqlite)",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "start": "tsx src/server.ts",
+    "seed": "tsx src/seed.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@fastify/cors": "^10.0.1",
+    "@fastify/jwt": "^9.0.1",
+    "bcryptjs": "^2.4.3",
+    "fastify": "^5.1.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/node": "^22.20.1",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3"
+  }
+}

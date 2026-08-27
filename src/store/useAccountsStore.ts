@@ -1,4 +1,9 @@
 import { create } from 'zustand';
+import { accountsApi } from '@/features/accounts/api';
+
+// Em testes, não fazemos chamadas de rede (o backend não sobe); as ações
+// atualizam só o estado local. Em dev/produção, sincronizam com a API.
+const ONLINE = import.meta.env.MODE !== 'test';
 
 /** Tipos de conta suportados. */
 export type AccountType = 'corrente' | 'poupanca' | 'investimento' | 'cartao';
@@ -24,6 +29,8 @@ export type AccountInput = Omit<Account, 'id'>;
 
 interface AccountsState {
   accounts: Account[];
+  /** Carrega as contas do backend (no boot da app). */
+  hydrate: () => Promise<void>;
   addAccount: (input: AccountInput) => Account;
   updateAccount: (id: string, input: AccountInput) => void;
   removeAccount: (id: string) => void;
@@ -80,10 +87,30 @@ export const initialAccounts: Account[] = [
  */
 export const useAccountsStore = create<AccountsState>((set) => ({
   accounts: initialAccounts,
+  hydrate: async () => {
+    try {
+      set({ accounts: await accountsApi.list() });
+    } catch {
+      /* offline: mantém o estado atual (seed) */
+    }
+  },
   addAccount: (input) => {
-    const account: Account = { id: crypto.randomUUID(), ...input };
-    set((state) => ({ accounts: [...state.accounts, account] }));
-    return account;
+    // Atualização otimista + persistência (reconcilia com o id do servidor).
+    const optimistic: Account = { id: crypto.randomUUID(), ...input };
+    set((state) => ({ accounts: [...state.accounts, optimistic] }));
+    if (ONLINE) {
+      accountsApi
+        .create(input)
+        .then((created) =>
+          set((state) => ({
+            accounts: state.accounts.map((a) =>
+              a.id === optimistic.id ? created : a,
+            ),
+          })),
+        )
+        .catch(() => {});
+    }
+    return optimistic;
   },
   updateAccount: (id, input) => {
     set((state) => ({
@@ -91,10 +118,21 @@ export const useAccountsStore = create<AccountsState>((set) => ({
         acc.id === id ? { ...acc, ...input, id } : acc,
       ),
     }));
+    if (ONLINE) {
+      accountsApi
+        .update(id, input)
+        .then((updated) =>
+          set((state) => ({
+            accounts: state.accounts.map((a) => (a.id === id ? updated : a)),
+          })),
+        )
+        .catch(() => {});
+    }
   },
   removeAccount: (id) => {
     set((state) => ({
       accounts: state.accounts.filter((acc) => acc.id !== id),
     }));
+    if (ONLINE) accountsApi.remove(id).catch(() => {});
   },
 }));

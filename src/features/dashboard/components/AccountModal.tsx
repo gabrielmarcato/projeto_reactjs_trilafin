@@ -9,6 +9,7 @@ import { Modal } from '@/components/ui/Modal';
 import { SelectField } from '@/components/ui/SelectField';
 import { useAccountsStore } from '@/store/useAccountsStore';
 import type { Account } from '@/store/useAccountsStore';
+import { toast } from '@/store/useToastStore';
 import {
   ACCOUNT_TYPE_OPTIONS,
   accountFormSchema,
@@ -128,14 +129,19 @@ export function AccountModal({ open, onClose, account }: AccountModalProps) {
     };
     if (account) {
       updateAccount(account.id, payload);
+      toast.success(`Conta "${values.name}" atualizada.`);
     } else {
       addAccount(payload);
+      toast.success(`Conta "${values.name}" cadastrada.`);
     }
     close();
   });
 
   const handleRemove = () => {
-    if (account) removeAccount(account.id);
+    if (account) {
+      removeAccount(account.id);
+      toast.success(`Conta "${account.name}" removida.`);
+    }
     close();
   };
 

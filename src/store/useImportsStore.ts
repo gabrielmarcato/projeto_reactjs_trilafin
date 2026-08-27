@@ -1,4 +1,7 @@
 import { create } from 'zustand';
+import { importsApi } from '@/features/imports/api';
+
+const ONLINE = import.meta.env.MODE !== 'test';
 
 export type ImportStatus = 'concluida' | 'processando' | 'erro';
 
@@ -29,6 +32,7 @@ export interface PendingImport {
 interface ImportsState {
   imports: ImportRecord[];
   pendingImport: PendingImport | null;
+  hydrate: () => Promise<void>;
   addImport: (input: ImportInput) => void;
   removeImport: (id: string) => void;
   setPendingImport: (pending: PendingImport | null) => void;
@@ -75,13 +79,34 @@ export const initialImports: ImportRecord[] = [
 export const useImportsStore = create<ImportsState>((set) => ({
   imports: initialImports,
   pendingImport: null,
-  addImport: (input) =>
-    set((state) => ({
-      imports: [{ id: crypto.randomUUID(), ...input }, ...state.imports],
-    })),
-  removeImport: (id) =>
+  hydrate: async () => {
+    try {
+      set({ imports: await importsApi.list() });
+    } catch {
+      /* offline: mantém o estado atual */
+    }
+  },
+  addImport: (input) => {
+    const optimistic: ImportRecord = { id: crypto.randomUUID(), ...input };
+    set((state) => ({ imports: [optimistic, ...state.imports] }));
+    if (ONLINE) {
+      importsApi
+        .create(input)
+        .then((created) =>
+          set((state) => ({
+            imports: state.imports.map((i) =>
+              i.id === optimistic.id ? created : i,
+            ),
+          })),
+        )
+        .catch(() => {});
+    }
+  },
+  removeImport: (id) => {
     set((state) => ({
       imports: state.imports.filter((i) => i.id !== id),
-    })),
+    }));
+    if (ONLINE) importsApi.remove(id).catch(() => {});
+  },
   setPendingImport: (pendingImport) => set({ pendingImport }),
 }));

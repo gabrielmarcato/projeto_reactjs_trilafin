@@ -1,21 +1,35 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import { renderApp } from '@/test/test-utils';
 
+// A autenticação chama a API; mockamos o cliente (sem servidor nos testes).
+vi.mock('@/lib/api', () => ({
+  loginRequest: vi.fn(),
+  setAuthToken: vi.fn(),
+  apiFetch: vi.fn(),
+  ApiError: class extends Error {},
+}));
+
+import { loginRequest } from '@/lib/api';
+
 describe('LoginScreen / autenticação', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   it('redireciona para /login quando não autenticado', async () => {
     renderApp('/', { authenticated: false });
 
     expect(
       await screen.findByRole('heading', { name: 'Entrar' }),
     ).toBeInTheDocument();
-    // A home (protegida) não aparece.
     expect(
       screen.queryByText(/Visão geral — Agosto 2026/i),
     ).not.toBeInTheDocument();
   });
 
   it('mostra erro com credenciais inválidas', async () => {
+    vi.mocked(loginRequest).mockRejectedValue(new Error('inválido'));
     const { user } = renderApp('/login', { authenticated: false });
 
     await user.type(await screen.findByLabelText(/usuário/i), 'teste');
@@ -28,6 +42,10 @@ describe('LoginScreen / autenticação', () => {
   });
 
   it('entra com teste/teste e acessa a home', async () => {
+    vi.mocked(loginRequest).mockResolvedValue({
+      token: 'jwt-de-teste',
+      user: { username: 'teste' },
+    });
     const { user } = renderApp('/login', { authenticated: false });
 
     await user.type(await screen.findByLabelText(/usuário/i), 'teste');
@@ -39,5 +57,6 @@ describe('LoginScreen / autenticação', () => {
         screen.getByText(/Visão geral — Agosto 2026/i),
       ).toBeInTheDocument(),
     );
+    expect(loginRequest).toHaveBeenCalledWith('teste', 'teste');
   });
 });

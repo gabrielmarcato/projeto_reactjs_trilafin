@@ -69,6 +69,42 @@ const AccountAmount = styled.span<{ $tone: string }>`
   color: ${({ $tone }) => $tone};
 `;
 
+const EmptyBox = styled.button`
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing(2)};
+  width: calc(100% - ${({ theme }) => theme.spacing(12)});
+  margin: 0 ${({ theme }) => theme.spacing(6)};
+  padding: ${({ theme }) => theme.spacing(4)};
+  text-align: left;
+  border: 1px dashed ${({ theme }) => theme.colors.border};
+  background: transparent;
+  color: ${({ theme }) => theme.colors.textMuted};
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    color 0.15s ease;
+
+  &:hover {
+    border-color: ${({ theme }) => theme.colors.accent};
+    color: ${({ theme }) => theme.colors.text};
+  }
+`;
+
+const EmptyTitle = styled.span`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing(2)};
+  font-size: ${({ theme }) => theme.type.small};
+  font-weight: ${({ theme }) => theme.fontWeights.semibold};
+  color: ${({ theme }) => theme.colors.textBright};
+`;
+
+const EmptyHint = styled.span`
+  font-size: ${({ theme }) => theme.type.micro};
+  color: ${({ theme }) => theme.colors.textFaint};
+`;
+
 /** Valor formatado + cor de exibição de uma conta (cartão soma como fatura). */
 function accountView(acc: Account): { amount: string; tone: string } {
   if (acc.type === 'cartao') {
@@ -110,25 +146,41 @@ export function Sidebar() {
         </IconButton>
       </GroupHeader>
 
-      <AccountList>
-        {accounts.map((acc) => {
-          const view = accountView(acc);
-          return (
-            <AccountRow
-              key={acc.id}
-              type="button"
-              onClick={() => openEdit(acc)}
-              aria-label={`Editar conta ${acc.name}`}
-            >
-              <AccountHead>
-                <AccountName>{acc.name}</AccountName>
-                <AccountKind>{acc.bank}</AccountKind>
-              </AccountHead>
-              <AccountAmount $tone={view.tone}>{view.amount}</AccountAmount>
-            </AccountRow>
-          );
-        })}
-      </AccountList>
+      {accounts.length === 0 ? (
+        <EmptyBox
+          type="button"
+          onClick={openCreate}
+          aria-label="Cadastre sua conta"
+        >
+          <EmptyTitle>
+            <PlusIcon />
+            Cadastre sua conta
+          </EmptyTitle>
+          <EmptyHint>
+            Adicione uma conta para ver saldos e movimentações aqui.
+          </EmptyHint>
+        </EmptyBox>
+      ) : (
+        <AccountList>
+          {accounts.map((acc) => {
+            const view = accountView(acc);
+            return (
+              <AccountRow
+                key={acc.id}
+                type="button"
+                onClick={() => openEdit(acc)}
+                aria-label={`Editar conta ${acc.name}`}
+              >
+                <AccountHead>
+                  <AccountName>{acc.name}</AccountName>
+                  <AccountKind>{acc.bank}</AccountKind>
+                </AccountHead>
+                <AccountAmount $tone={view.tone}>{view.amount}</AccountAmount>
+              </AccountRow>
+            );
+          })}
+        </AccountList>
+      )}
 
       <AccountModal
         open={isModalOpen}

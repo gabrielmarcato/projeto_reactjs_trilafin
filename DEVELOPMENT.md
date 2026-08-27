@@ -42,12 +42,9 @@ npm install        # instala deps e configura os git hooks (script "prepare")
 npm run dev        # http://localhost:5173
 ```
 
-Ao abrir, a aplicação exige login. Use as credenciais de teste:
-
-```
-usuário: teste
-senha:   teste
-```
+Ao abrir, a aplicação exige login. O usuário inicial é criado pelo seed do
+backend (usuário `gabrielmarcato`); a senha vem de `SEED_PASSWORD` (veja
+[Backend](#backend-fastify--sqlite)).
 
 ## Scripts
 
@@ -248,12 +245,14 @@ rootRoute.addChildren([
 
 ## Autenticação
 
-Demo, em memória ([`useAuthStore`](src/store/useAuthStore.ts)). Credenciais:
-`teste` / `teste`.
+Integrada ao backend ([`useAuthStore`](src/store/useAuthStore.ts)). O usuário
+inicial é criado pelo seed (`gabrielmarcato`); a senha vem de `SEED_PASSWORD`.
 
-- `login(user, pass)` valida e seta `isAuthenticated`.
+- `login(user, pass)` chama a API, guarda o **JWT no `localStorage`** (a sessão
+  sobrevive ao F5) e seta `isAuthenticated`.
 - A casca protege as rotas via `beforeLoad`.
-- "Sair" (menu do usuário) chama `logout()` e navega para `/login`.
+- "Sair" (menu do usuário) chama `logout()`, limpa o token e navega para
+  `/login`.
 
 ---
 
@@ -331,6 +330,85 @@ Instalados automaticamente no `npm install` (script `prepare`). Emergência:
 > `vitest related` não é usado no commit porque o `test-utils` monta o router
 > inteiro — o grafo de módulos de qualquer teste inclui todas as telas, então
 > "related" marcaria quase tudo.
+
+---
+
+## Backend (Fastify + SQLite)
+
+A API vive em [`server/`](server/) — **Fastify + `node:sqlite`** (o SQLite
+embutido no Node 24, um arquivo local, **sem instalar banco**).
+
+### Rodar
+
+```bash
+npm run api:install   # instala as deps do backend (uma vez)
+npm run api:seed      # cria e popula server/data.db
+npm run api:dev       # sobe a API em http://localhost:3333 (watch)
+```
+
+Rode o **front** (`npm run dev`) e a **API** (`npm run api:dev`) em dois
+terminais. O front aponta para `VITE_API_URL` (padrão `http://localhost:3333`).
+
+### Estrutura
+
+```
+server/
+├── src/
+│   ├── server.ts        # Fastify: CORS, JWT, guarda, registra rotas, seed no boot
+│   ├── db.ts            # abre o SQLite (node:sqlite) e cria o schema
+│   ├── seed.ts          # popula com os mesmos dados iniciais do front
+│   ├── schemas.ts       # validação Zod das rotas
+│   ├── fastify.d.ts     # augmentation (decorator authenticate, payload JWT)
+│   └── routes/
+│       ├── auth.ts      # POST /auth/login, GET /auth/me
+│       └── data.ts      # accounts, transactions, settings, imports, profile (protegidas)
+└── data.db              # o "banco" (arquivo, ignorado no git)
+```
+
+### Autenticação
+
+- `POST /auth/login` `{ username, password }` → `{ token, user }` (JWT). O
+  usuário inicial vem do seed: `SEED_USERNAME` (padrão `gabrielmarcato`) /
+  `SEED_PASSWORD` (hash bcrypt no banco). Defina-os em `server/.env` para não
+  versionar a senha.
+- Rotas de dados exigem `Authorization: Bearer <token>` (guarda `authenticate`).
+
+### Endpoints (todas exigem token, exceto login e /health)
+
+| Método  | Rota                                                        | Descrição   |
+| ------- | ----------------------------------------------------------- | ----------- |
+| POST    | `/auth/login`                                               | Autentica   |
+| GET     | `/accounts` · POST · PUT `/:id` · DELETE `/:id`             | Contas      |
+| GET     | `/transactions` · POST · PUT `/:id` · DELETE `/:id`         | Transações  |
+| GET     | `/settings/:collection` · POST · PUT `/:id` · DELETE `/:id` | Taxonomias  |
+| GET     | `/imports` · POST · DELETE `/:id`                           | Importações |
+| GET/PUT | `/profile`                                                  | Perfil      |
+
+### Migrando uma tela do Zustand para a API
+
+Hoje só a **autenticação** está ligada ao backend; as telas de dados ainda leem
+das stores Zustand (com os mesmos dados semeados). Para migrar um recurso, use o
+TanStack Query com o cliente [`@/lib/api`](src/lib/api.ts):
+
+```ts
+// src/features/accounts/api.ts
+import { apiFetch } from '@/lib/api';
+export const fetchAccounts = () => apiFetch<Account[]>('/accounts');
+export const createAccount = (input: AccountInput) =>
+  apiFetch<Account>('/accounts', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+
+// hook
+export function useAccounts() {
+  return useQuery({ queryKey: ['accounts'], queryFn: fetchAccounts });
+}
+```
+
+Depois troque, na tela, `useAccountsStore` pelos hooks de query/mutation e ajuste
+o teste correspondente para **mockar `@/lib/api`** (como em
+`LoginScreen.test.tsx`) — o servidor não sobe nos testes.
 
 ---
 

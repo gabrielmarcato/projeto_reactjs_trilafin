@@ -25,8 +25,9 @@ princípio: cada decisão financeira cabe em uma linha bem alinhada. A interface
 usa um design system autoral — **Modernist (dark)**: fundo quase-preto, um único
 acento coral, tipografia **Archivo**, cantos retos e réguas fortes de 2px.
 
-> **Status:** protótipo funcional de front-end. Os dados são mantidos em memória
-> (mock) e a autenticação é de demonstração — veja o [roadmap](#-roadmap).
+> **Status:** front-end funcional com **backend Fastify + SQLite** e login real
+> (JWT). As telas de dados ainda usam estado local — a API já expõe as rotas
+> para migrá-las. Veja o [roadmap](#-roadmap).
 
 ## 🧩 Funcionalidades
 
@@ -57,17 +58,18 @@ acessibilidade (foco de teclado temático, `aria-*`, diálogos com `role`).
 
 ## 🧱 Stack técnica
 
-| Camada                  | Tecnologia                               |
-| ----------------------- | ---------------------------------------- |
-| UI                      | **React 18** + **TypeScript** (strict)   |
-| Build / dev server      | **Vite**                                 |
-| Estilização             | **styled-components** com tema tipado    |
-| Estado                  | **Zustand**                              |
-| Roteamento              | **TanStack Router** (code-based, tipado) |
-| Data fetching / cache   | **TanStack Query**                       |
-| Formulários + validação | **React Hook Form** + **Zod**            |
-| Testes                  | **Vitest** + **Testing Library**         |
-| Qualidade               | **ESLint** + **Prettier** + **Husky**    |
+| Camada                  | Tecnologia                                         |
+| ----------------------- | -------------------------------------------------- |
+| UI                      | **React 18** + **TypeScript** (strict)             |
+| Build / dev server      | **Vite**                                           |
+| Estilização             | **styled-components** com tema tipado              |
+| Estado                  | **Zustand**                                        |
+| Roteamento              | **TanStack Router** (code-based, tipado)           |
+| Data fetching / cache   | **TanStack Query**                                 |
+| Formulários + validação | **React Hook Form** + **Zod**                      |
+| Testes                  | **Vitest** + **Testing Library**                   |
+| Qualidade               | **ESLint** + **Prettier** + **Husky**              |
+| **Backend**             | **Fastify** + **SQLite** (`node:sqlite`) + **JWT** |
 
 ## 🚀 Começando
 
@@ -81,12 +83,21 @@ npm install
 npm run dev
 ```
 
-Abra `http://localhost:5173` e entre com as credenciais de teste:
+Suba também o **backend** (Fastify + SQLite, sem instalar banco) em outro
+terminal:
 
+```bash
+npm run api:install   # uma vez
+npm run api:seed      # cria e popula server/data.db
+npm run api:dev       # API em http://localhost:3333
 ```
-usuário: teste
-senha:   teste
-```
+
+Abra `http://localhost:5173` e entre com o **usuário inicial** criado pelo seed
+do backend (usuário `gabrielmarcato`). A senha é definida no seed, configurável
+por variável de ambiente (`SEED_USERNAME` / `SEED_PASSWORD` em `server/.env`).
+
+> Detalhes da API (rotas, autenticação, migração das telas para o backend) no
+> **[Guia de Desenvolvimento](DEVELOPMENT.md#backend-fastify--sqlite)**.
 
 Para gerar o build de produção:
 
@@ -117,11 +128,13 @@ npm run build && npm run preview
 
 ## 🧭 Roadmap
 
-- [ ] **Persistência** dos dados (localStorage / backend)
+- [x] **Backend** Fastify + SQLite com API REST e **autenticação JWT**
+- [x] **Login integrado** ao backend (validação real de credenciais)
+- [ ] **Ligar as telas de dados** à API (hoje só a auth está integrada; contas,
+      transações, etc. ainda usam estado local — a API já expõe as rotas)
 - [ ] **Orçamentos** (tela já reservada no menu)
 - [ ] **Parse real** de importação (OFX/CSV → lançamentos, detecção de
       duplicados, categorização automática)
-- [ ] Autenticação real (backend + sessão)
 - [ ] Gráficos no relatório e mais formatos de exportação
 
 ## 🤝 Contribuindo

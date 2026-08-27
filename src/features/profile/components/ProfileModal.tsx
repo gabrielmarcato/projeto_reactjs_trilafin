@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/Text';
 import { useProfileStore } from '@/store/useProfileStore';
 import type { Profile } from '@/store/useProfileStore';
 import { useSettingsStore } from '@/store/useSettingsStore';
+import { toast } from '@/store/useToastStore';
 import { profileSchema, UFS } from '../profileSchema';
 import type { ProfileFormValues } from '../profileSchema';
 
@@ -121,6 +122,7 @@ export function ProfileModal({ open, onClose }: ProfileModalProps) {
       closingDay: values.closingDay,
       monthlyIncome: values.monthlyIncome,
     });
+    toast.success('Dados da conta atualizados.');
     onClose();
   });
 

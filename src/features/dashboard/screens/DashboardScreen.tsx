@@ -5,9 +5,8 @@ import { StatBand } from '../components/StatBand';
 import { CashFlowCard } from '../components/CashFlowCard';
 import { CategoriesCard } from '../components/CategoriesCard';
 import { TransactionsCard } from '../components/TransactionsCard';
+import { PERIODS, type Period } from '../aggregate';
 import * as S from './DashboardScreen.styles';
-
-const PERIODS = ['Semana', 'Mês', 'Ano'] as const;
 
 /**
  * Conteúdo central da home (dashboard). Renderiza dentro da casca da aplicação
@@ -15,7 +14,7 @@ const PERIODS = ['Semana', 'Mês', 'Ano'] as const;
  * chrome aqui.
  */
 export function DashboardScreen() {
-  const [period, setPeriod] = useState<(typeof PERIODS)[number]>('Mês');
+  const [period, setPeriod] = useState<Period>('Mês');
 
   return (
     <>
@@ -31,11 +30,11 @@ export function DashboardScreen() {
         />
       </S.Hero>
 
-      <StatBand />
+      <StatBand period={period} />
 
       <S.SplitRow>
         <CashFlowCard />
-        <CategoriesCard />
+        <CategoriesCard period={period} />
       </S.SplitRow>
 
       <TransactionsCard />

@@ -14,6 +14,7 @@ import {
 } from '@/store/useTransactionsStore';
 import { initialImports, useImportsStore } from '@/store/useImportsStore';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useToastStore } from '@/store/useToastStore';
 import { GlobalStyle } from '@/styles/GlobalStyle';
 import { theme } from '@/styles/theme';
 
@@ -44,8 +45,10 @@ export function renderApp(
   useProfileStore.setState({ profile: initialProfile });
   useTransactionsStore.setState({ transactions: initialTransactions });
   useImportsStore.setState({ imports: initialImports, pendingImport: null });
-  // Por padrão já autenticado (a maioria dos testes usa telas protegidas).
+  // Zera a auth (limpa token/localStorage) e define o estado desejado.
+  useAuthStore.getState().logout();
   useAuthStore.setState({ isAuthenticated: authenticated });
+  useToastStore.setState({ toasts: [] });
 
   const history = createMemoryHistory({ initialEntries: [initialPath] });
   const router = createAppRouter(history);

@@ -16,6 +16,9 @@
     "test:ui": "vitest --ui",
     "typecheck": "tsc -b --noEmit",
     "check": "npm run typecheck && npm run lint && npm run test",
+    "api:install": "npm --prefix server install",
+    "api:dev": "npm --prefix server run dev",
+    "api:seed": "npm --prefix server run seed",
     "prepare": "husky"
   },
   "lint-staged": {

@@ -1,4 +1,7 @@
 import { create } from 'zustand';
+import { transactionsApi } from '@/features/transactions/api';
+
+const ONLINE = import.meta.env.MODE !== 'test';
 
 export type TransactionType = 'entrada' | 'saida';
 
@@ -27,6 +30,7 @@ export type TransactionInput = Omit<Transaction, 'id'>;
 
 interface TransactionsState {
   transactions: Transaction[];
+  hydrate: () => Promise<void>;
   addTransaction: (input: TransactionInput) => void;
   updateTransaction: (id: string, input: TransactionInput) => void;
   removeTransaction: (id: string) => void;
@@ -125,21 +129,52 @@ export const initialTransactions: Transaction[] = [
  */
 export const useTransactionsStore = create<TransactionsState>((set) => ({
   transactions: initialTransactions,
-  addTransaction: (input) =>
-    set((state) => ({
-      transactions: [
-        { id: crypto.randomUUID(), ...input },
-        ...state.transactions,
-      ],
-    })),
-  updateTransaction: (id, input) =>
+  hydrate: async () => {
+    try {
+      set({ transactions: await transactionsApi.list() });
+    } catch {
+      /* offline: mantém o estado atual */
+    }
+  },
+  addTransaction: (input) => {
+    const optimistic: Transaction = { id: crypto.randomUUID(), ...input };
+    set((state) => ({ transactions: [optimistic, ...state.transactions] }));
+    if (ONLINE) {
+      transactionsApi
+        .create(input)
+        .then((created) =>
+          set((state) => ({
+            transactions: state.transactions.map((t) =>
+              t.id === optimistic.id ? created : t,
+            ),
+          })),
+        )
+        .catch(() => {});
+    }
+  },
+  updateTransaction: (id, input) => {
     set((state) => ({
       transactions: state.transactions.map((t) =>
         t.id === id ? { ...input, id } : t,
       ),
-    })),
-  removeTransaction: (id) =>
+    }));
+    if (ONLINE) {
+      transactionsApi
+        .update(id, input)
+        .then((updated) =>
+          set((state) => ({
+            transactions: state.transactions.map((t) =>
+              t.id === id ? updated : t,
+            ),
+          })),
+        )
+        .catch(() => {});
+    }
+  },
+  removeTransaction: (id) => {
     set((state) => ({
       transactions: state.transactions.filter((t) => t.id !== id),
-    })),
+    }));
+    if (ONLINE) transactionsApi.remove(id).catch(() => {});
+  },
 }));

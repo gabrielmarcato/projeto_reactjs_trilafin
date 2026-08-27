@@ -5,6 +5,7 @@ import { ThemeProvider } from 'styled-components';
 import { queryClient } from '@/lib/queryClient';
 import { GlobalStyle } from '@/styles/GlobalStyle';
 import { theme } from '@/styles/theme';
+import { ToastViewport } from '@/components/ui/ToastViewport';
 
 /**
  * Composição de providers globais da aplicação.
@@ -19,6 +20,7 @@ export function AppProviders({ children }: { children: ReactNode }) {
       <ThemeProvider theme={theme}>
         <GlobalStyle />
         {children}
+        <ToastViewport />
         <ReactQueryDevtools initialIsOpen={false} />
       </ThemeProvider>
     </QueryClientProvider>

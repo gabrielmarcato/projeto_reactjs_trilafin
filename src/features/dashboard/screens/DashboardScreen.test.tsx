@@ -10,8 +10,9 @@ describe('DashboardScreen', () => {
       await screen.findByText(/Visão geral — Agosto 2026/i),
     ).toBeInTheDocument();
 
-    // Indicadores e uma transação do design.
-    expect(screen.getByText('Patrimônio líquido')).toBeInTheDocument();
+    // Indicadores (dados reais) e uma transação recente.
+    expect(screen.getByText('Saldo')).toBeInTheDocument();
+    expect(screen.getByText('Lançamentos')).toBeInTheDocument();
     expect(screen.getByText('Salário — Vector Studio')).toBeInTheDocument();
   });
 

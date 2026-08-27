@@ -76,15 +76,9 @@ const FormError = styled.p`
   font-size: ${({ theme }) => theme.type.small};
 `;
 
-const Hint = styled.p`
-  margin: 0;
-  font-size: ${({ theme }) => theme.type.micro};
-  color: ${({ theme }) => theme.colors.textFaint};
-`;
-
 /**
- * Tela de login (fora da casca). Demo: `teste` / `teste`. Ao autenticar,
- * navega para a home; as rotas protegidas passam a liberar o acesso.
+ * Tela de login (fora da casca). O usuário inicial é criado pelo seed do
+ * backend (`SEED_USERNAME`/`SEED_PASSWORD`). Ao autenticar, navega para a home.
  */
 export function LoginScreen() {
   const navigate = useNavigate();
@@ -93,10 +87,14 @@ export function LoginScreen() {
   const [user, setUser] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | undefined>(undefined);
+  const [submitting, setSubmitting] = useState(false);
 
-  const onSubmit = (e: FormEvent) => {
+  const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (login(user, password)) {
+    setSubmitting(true);
+    const ok = await login(user, password);
+    setSubmitting(false);
+    if (ok) {
       navigate({ to: '/' });
     } else {
       setError('Usuário ou senha inválidos.');
@@ -123,7 +121,7 @@ export function LoginScreen() {
           <Field
             label="Usuário"
             name="user"
-            placeholder="teste"
+            placeholder="gabrielmarcato"
             autoComplete="username"
             value={user}
             onChange={(e) => {
@@ -143,12 +141,10 @@ export function LoginScreen() {
               if (error) setError(undefined);
             }}
           />
-          <Button type="submit" $block>
-            Entrar
+          <Button type="submit" $block disabled={submitting}>
+            {submitting ? 'Entrando…' : 'Entrar'}
           </Button>
         </Form>
-
-        <Hint>Use as credenciais de teste: teste / teste.</Hint>
       </Card>
     </Page>
   );

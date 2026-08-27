@@ -1,4 +1,7 @@
 import { create } from 'zustand';
+import { settingsApi } from '@/features/settings/api';
+
+const ONLINE = import.meta.env.MODE !== 'test';
 
 /** Item genérico de uma taxonomia configurável. */
 export interface SettingsItem {
@@ -10,8 +13,17 @@ export interface SettingsItem {
 export type CollectionKey =
   'categories' | 'budgetTypes' | 'paymentMethods' | 'tags' | 'currencies';
 
+const COLLECTION_KEYS: CollectionKey[] = [
+  'categories',
+  'budgetTypes',
+  'paymentMethods',
+  'tags',
+  'currencies',
+];
+
 interface SettingsState {
   collections: Record<CollectionKey, SettingsItem[]>;
+  hydrate: () => Promise<void>;
   addItem: (key: CollectionKey, name: string) => void;
   renameItem: (key: CollectionKey, id: string, name: string) => void;
   removeItem: (key: CollectionKey, id: string) => void;
@@ -62,17 +74,48 @@ export const initialCollections: Record<CollectionKey, SettingsItem[]> = {
  */
 export const useSettingsStore = create<SettingsState>((set) => ({
   collections: initialCollections,
-  addItem: (key, name) =>
+  hydrate: async () => {
+    try {
+      const lists = await Promise.all(
+        COLLECTION_KEYS.map((key) => settingsApi.list(key)),
+      );
+      const collections = {} as Record<CollectionKey, SettingsItem[]>;
+      COLLECTION_KEYS.forEach((key, i) => {
+        collections[key] = lists[i] ?? [];
+      });
+      set({ collections });
+    } catch {
+      /* offline: mantém o estado atual */
+    }
+  },
+  addItem: (key, name) => {
+    const optimistic: SettingsItem = {
+      id: crypto.randomUUID(),
+      name: name.trim(),
+    };
     set((state) => ({
       collections: {
         ...state.collections,
-        [key]: [
-          ...state.collections[key],
-          { id: crypto.randomUUID(), name: name.trim() },
-        ],
+        [key]: [...state.collections[key], optimistic],
       },
-    })),
-  renameItem: (key, id, name) =>
+    }));
+    if (ONLINE) {
+      settingsApi
+        .create(key, optimistic.name)
+        .then((created) =>
+          set((state) => ({
+            collections: {
+              ...state.collections,
+              [key]: state.collections[key].map((it) =>
+                it.id === optimistic.id ? created : it,
+              ),
+            },
+          })),
+        )
+        .catch(() => {});
+    }
+  },
+  renameItem: (key, id, name) => {
     set((state) => ({
       collections: {
         ...state.collections,
@@ -80,12 +123,16 @@ export const useSettingsStore = create<SettingsState>((set) => ({
           it.id === id ? { ...it, name: name.trim() } : it,
         ),
       },
-    })),
-  removeItem: (key, id) =>
+    }));
+    if (ONLINE) settingsApi.update(key, id, name.trim()).catch(() => {});
+  },
+  removeItem: (key, id) => {
     set((state) => ({
       collections: {
         ...state.collections,
         [key]: state.collections[key].filter((it) => it.id !== id),
       },
-    })),
+    }));
+    if (ONLINE) settingsApi.remove(key, id).catch(() => {});
+  },
 }));

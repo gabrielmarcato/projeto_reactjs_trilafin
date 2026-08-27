@@ -11,6 +11,7 @@ import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { shortDate } from '@/lib/format';
 import { useImportsStore } from '@/store/useImportsStore';
 import type { ImportRecord, ImportStatus } from '@/store/useImportsStore';
+import { toast } from '@/store/useToastStore';
 import { ImportModal } from '../components/ImportModal';
 
 const Header = styled.header`
@@ -419,7 +420,10 @@ export function ImportsScreen() {
         }
         confirmLabel="Sim, remover"
         onConfirm={() => {
-          if (removing) removeImport(removing.id);
+          if (removing) {
+            removeImport(removing.id);
+            toast.success(`Importação "${removing.fileName}" removida.`);
+          }
         }}
         onClose={() => setRemoving(null)}
       />

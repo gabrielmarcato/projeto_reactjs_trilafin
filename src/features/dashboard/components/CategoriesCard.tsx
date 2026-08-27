@@ -1,7 +1,16 @@
+import { useMemo } from 'react';
 import styled from 'styled-components';
 import { SectionTitle } from '@/components/ui/Text';
 import { ProgressBar } from '@/components/ui/ProgressBar';
-import { categories } from '../data';
+import { money } from '@/lib/format';
+import { theme } from '@/styles/theme';
+import { useTransactionsStore } from '@/store/useTransactionsStore';
+import {
+  filterByPeriod,
+  summarize,
+  topCategories,
+  type Period,
+} from '../aggregate';
 
 const Card = styled.div`
   border: 1px solid ${({ theme }) => theme.colors.borderStrong};
@@ -49,25 +58,65 @@ const Amount = styled.span`
   color: ${({ theme }) => theme.colors.textSecondary};
 `;
 
-/** "Para onde foi": ranking de despesas por categoria com barras. */
-export function CategoriesCard() {
+const Empty = styled.div`
+  padding: ${({ theme }) => theme.spacing(8)} 0;
+  text-align: center;
+  font-size: ${({ theme }) => theme.type.small};
+  color: ${({ theme }) => theme.colors.textFaint};
+  border-top: 1px solid ${({ theme }) => theme.colors.borderSubtle};
+`;
+
+// Tons que decrescem conforme o ranking (destaque no topo).
+const TONES = [
+  theme.colors.textBright,
+  theme.colors.accent,
+  theme.colors.textMuted,
+  theme.colors.textMuted,
+  theme.colors.textFaintest,
+  theme.colors.textFaintest,
+];
+
+/** "Para onde foi": top 6 categorias de despesa do período, das transações. */
+export function CategoriesCard({ period }: { period: Period }) {
+  const transactions = useTransactionsStore((s) => s.transactions);
+
+  const { rows, totalSaidas } = useMemo(() => {
+    const inPeriod = filterByPeriod(transactions, period);
+    return {
+      rows: topCategories(inPeriod, 6),
+      totalSaidas: summarize(inPeriod).saidas,
+    };
+  }, [transactions, period]);
+
   return (
     <Card>
       <div>
         <SectionTitle>Para onde foi</SectionTitle>
-        <Sub>R$ 12.480 em despesas</Sub>
+        <Sub>
+          {rows.length
+            ? `${money(totalSaidas)} em despesas`
+            : 'Ranking das categorias de despesa'}
+        </Sub>
       </div>
-      <List>
-        {categories.map((c) => (
-          <Row key={c.label}>
-            <Head>
-              <Name>{c.label}</Name>
-              <Amount>{c.amount}</Amount>
-            </Head>
-            <ProgressBar pct={c.pct} tone={c.tone} height={4} />
-          </Row>
-        ))}
-      </List>
+      {rows.length === 0 ? (
+        <Empty>Sem despesas no período.</Empty>
+      ) : (
+        <List>
+          {rows.map((c, i) => (
+            <Row key={c.label}>
+              <Head>
+                <Name>{c.label}</Name>
+                <Amount>{money(c.amount)}</Amount>
+              </Head>
+              <ProgressBar
+                pct={c.pct}
+                tone={TONES[i] ?? theme.colors.textFaintest}
+                height={4}
+              />
+            </Row>
+          ))}
+        </List>
+      )}
     </Card>
   );
 }

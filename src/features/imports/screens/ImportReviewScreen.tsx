@@ -11,6 +11,7 @@ import { theme } from '@/styles/theme';
 import { useTransactionsStore } from '@/store/useTransactionsStore';
 import type { Transaction } from '@/store/useTransactionsStore';
 import { useImportsStore } from '@/store/useImportsStore';
+import { toast } from '@/store/useToastStore';
 import { TransactionModal } from '@/features/transactions/components/TransactionModal';
 import type { TransactionFormValues } from '@/features/transactions/transactionSchema';
 
@@ -259,6 +260,9 @@ export function ImportReviewScreen() {
       status: 'concluida',
     });
     setPendingImport(null);
+    toast.success(
+      `${ready.length} ${ready.length === 1 ? 'lançamento importado' : 'lançamentos importados'}.`,
+    );
     navigate({ to: '/transacoes' });
   };
 

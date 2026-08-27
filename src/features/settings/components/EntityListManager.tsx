@@ -6,6 +6,7 @@ import { IconButton } from '@/components/ui/IconButton';
 import { PencilIcon, PlusIcon, TrashIcon } from '@/components/icons';
 import { useSettingsStore } from '@/store/useSettingsStore';
 import type { CollectionKey, SettingsItem } from '@/store/useSettingsStore';
+import { toast } from '@/store/useToastStore';
 import { EntityFormModal } from './EntityFormModal';
 
 const Wrapper = styled.div`
@@ -125,8 +126,10 @@ export function EntityListManager({
   const handleSubmit = (name: string) => {
     if (editing) {
       renameItem(collectionKey, editing.id, name);
+      toast.success(`Item atualizado: "${name}".`);
     } else {
       addItem(collectionKey, name);
+      toast.success(`Item adicionado: "${name}".`);
     }
   };
 
@@ -194,7 +197,10 @@ export function EntityListManager({
         }
         confirmLabel="Sim, remover"
         onConfirm={() => {
-          if (removing) removeItem(collectionKey, removing.id);
+          if (removing) {
+            removeItem(collectionKey, removing.id);
+            toast.success(`Item removido: "${removing.name}".`);
+          }
         }}
         onClose={() => setRemoving(null)}
       />

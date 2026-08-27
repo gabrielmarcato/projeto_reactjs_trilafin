@@ -16,6 +16,7 @@ import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { money, shortDate } from '@/lib/format';
 import { useTransactionsStore } from '@/store/useTransactionsStore';
 import type { Transaction } from '@/store/useTransactionsStore';
+import { toast } from '@/store/useToastStore';
 import { theme } from '@/styles/theme';
 import { ImportModal } from '@/features/imports/components/ImportModal';
 import { TransactionModal } from '../components/TransactionModal';
@@ -331,8 +332,10 @@ export function TransactionsScreen() {
     };
     if (editing) {
       updateTransaction(editing.id, input);
+      toast.success('Lançamento atualizado.');
     } else {
       addTransaction(input);
+      toast.success('Lançamento adicionado.');
     }
   };
 
@@ -533,7 +536,10 @@ export function TransactionsScreen() {
         }
         confirmLabel="Sim, remover"
         onConfirm={() => {
-          if (removing) removeTransaction(removing.id);
+          if (removing) {
+            removeTransaction(removing.id);
+            toast.success('Lançamento removido.');
+          }
         }}
         onClose={() => setRemoving(null)}
       />
